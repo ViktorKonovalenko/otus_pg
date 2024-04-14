@@ -1,0 +1,43 @@
+---
+# tasks file for install_postgres
+  - name: disable firewalld service
+    service:
+      name: firewalld
+      state: stopped
+      enabled: false
+
+  # Отключаем SElinux
+  - name: Disable SELinux
+    selinux:
+      state: disabled
+
+  # Отключаем SElinux после перезагрузки
+  - name: Ensure SELinux is set to disable mode
+    lineinfile:
+      path: /etc/selinux/config
+      regexp: '^SELINUX='
+      line: SELINUX=disabled
+
+  - name: 'Устанавливаем репозиторий postgres'
+    shell: sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+    ignore_errors: yes
+#  - name: 'Обновляем пакеты'
+#    shell: yum update
+
+  - name: 'Устанавливаем postgres'
+    yum:
+      name: "{{ item }}"
+      state: latest
+    with_items:
+      - postgresql14-server
+      - postgresql14
+
+  - name: 'Инициализируем postgres'
+    shell: /usr/pgsql-14/bin/postgresql-14-setup initdb
+    ignore_errors: yes
+
+  - name: enable and start service
+    systemd:
+      name: postgresql-14
+      state: started
+      enabled: true
